@@ -2,4 +2,9 @@
     <string name="app_name">信息</string>
     <string name="edit">编辑</string>
     <string name="send_msg">发送信息</string>
+    <string name="create_contact">创建联系人</string>
+    <string name="contact_address">联系人地址</string>
+    <string name="public_key">公钥</string>
+    <string name="create">创建</string>
+    <string name="contact_name">联系人姓名</string>
 </resources>

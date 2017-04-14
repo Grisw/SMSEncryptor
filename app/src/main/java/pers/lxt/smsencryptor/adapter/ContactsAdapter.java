@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.ContentObserver;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Message;
@@ -20,6 +21,7 @@ import java.util.List;
 
 import pers.lxt.smsencryptor.R;
 import pers.lxt.smsencryptor.activity.MessageActivity;
+import pers.lxt.smsencryptor.database.Database;
 
 /**
  * Created by MissingNo on 2017/4/9.
@@ -56,6 +58,7 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
         }
     });
 
+    private Database database;
     private List<PhoneNumPair> contacts;
     private ContentResolver contentResolver;
     private ContentObserver contentObserver;
@@ -71,12 +74,14 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
                 getSmsInfo();
             }
         };
+        database = Database.getInstance(context);
     }
 
     private void getSmsInfo() {
         new Thread(new Runnable() {
             @Override
             public void run() {
+                List<PhoneNumPair> buffer = new ArrayList<>();
                 String[] projection = new String[] { "address", "person", "read" };
                 Cursor cursor = contentResolver.query(Uri.parse("content://sms/"), projection, null, null,
                         "read, date desc");
@@ -87,7 +92,6 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
                     int nameColumn = cursor.getColumnIndex("person");
                     int phoneNumberColumn = cursor.getColumnIndex("address");
                     int readColumn = cursor.getColumnIndex("read");
-                    List<PhoneNumPair> buffer = new ArrayList<>();
                     while (cursor.moveToNext()) {
                         String phoneNum = cursor.getString(phoneNumberColumn);
                         String name = cursor.getString(nameColumn);
@@ -102,8 +106,27 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
                         }
                     }
                     cursor.close();
-                    handler.obtainMessage(NOTIFY_ITEM_CHANGED,buffer).sendToTarget();
                 }
+
+                SQLiteDatabase db = database.getReadableDatabase();
+                cursor = db.query("contacts",new String[]{"address","name"},null,null,null,null,null);
+                if(cursor!=null){
+                    int phoneNumberColumn = cursor.getColumnIndex("address");
+                    int nameColumn = cursor.getColumnIndex("name");
+                    while(cursor.moveToNext()){
+                        String phoneNum = cursor.getString(phoneNumberColumn);
+                        String name = cursor.getString(nameColumn);
+
+                        PhoneNumPair pair = new PhoneNumPair(name, phoneNum, false);
+                        if(!buffer.contains(pair)){
+                            buffer.add(pair);
+                        }
+                    }
+                    cursor.close();
+                }
+                db.close();
+                if(buffer.size()>0)
+                    handler.obtainMessage(NOTIFY_ITEM_CHANGED,buffer).sendToTarget();
             }
         }).start();
     }
@@ -147,7 +170,7 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
         String name;
         boolean isNotify;
 
-        PhoneNumPair(String name, String phoneNum,boolean isNotify){
+        PhoneNumPair(String name, String phoneNum, boolean isNotify){
             this.name=name;
             this.isNotify = isNotify;
             this.phoneNum = phoneNum;
