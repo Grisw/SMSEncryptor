@@ -38,10 +38,12 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                 case NOTIFY_ITEM_INSERTED:{
                     List<Message> buffer = (List<Message>) msg.obj;
 
-                    int start = msgs.size();
-                    msgs.addAll(buffer);
-                    notifyItemRangeInserted(start, buffer.size());
-                    context.handler.obtainMessage(MessageActivity.SCROLL_RECYCLERVIEW,msgs.size()-1,0).sendToTarget();
+                    if(!msgs.containsAll(buffer)){
+                        int start = msgs.size();
+                        msgs.addAll(buffer);
+                        notifyItemRangeInserted(start, buffer.size());
+                        context.handler.obtainMessage(MessageActivity.SCROLL_RECYCLERVIEW,msgs.size()-1,0).sendToTarget();
+                    }
                 }break;
             }
             return false;
@@ -67,7 +69,8 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
             @Override
             public void onChange(boolean selfChange) {
                 super.onChange(selfChange);
-                getSmsInfo();
+                if(!selfChange)
+                    getSmsInfo();
             }
         };
     }

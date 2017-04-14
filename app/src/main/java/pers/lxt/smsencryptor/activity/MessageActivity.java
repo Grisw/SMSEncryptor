@@ -1,5 +1,7 @@
 package pers.lxt.smsencryptor.activity;
 
+import android.app.PendingIntent;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -7,7 +9,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.telephony.SmsManager;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
@@ -15,6 +19,8 @@ import pers.lxt.smsencryptor.R;
 import pers.lxt.smsencryptor.adapter.MessageAdapter;
 
 public class MessageActivity extends AppCompatActivity {
+
+    public static final String ACTION_SMS_SENT = "pers.lxt.smsencryptor.SMS_SENT";
 
     public static final int SCROLL_RECYCLERVIEW = 0;
 
@@ -33,17 +39,19 @@ public class MessageActivity extends AppCompatActivity {
     });
 
     private RecyclerView messages;
+    private String phoneNum;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_message);
 
-        String phoneNum = getIntent().getStringExtra("phone_num");
+        phoneNum = getIntent().getStringExtra("phone_num");
 
         messages = (RecyclerView) findViewById(R.id.messages);
-        ImageButton back = (ImageButton) findViewById(R.id.back);
+        final ImageButton back = (ImageButton) findViewById(R.id.back);
         TextView title = (TextView) findViewById(R.id.phone_num);
+        ImageButton send = (ImageButton) findViewById(R.id.send);
 
         messages.setLayoutManager(new LinearLayoutManager(this));
         MessageAdapter messageAdapter = new MessageAdapter(this, phoneNum);
@@ -56,6 +64,23 @@ public class MessageActivity extends AppCompatActivity {
             }
         });
         title.setText(phoneNum);
+        send.setOnClickListener(new View.OnClickListener() {
+            private EditText input = (EditText) findViewById(R.id.message);
+            private SmsManager smsManager = SmsManager.getDefault();
+
+            @Override
+            public void onClick(View v) {
+                String message = input.getText().toString();
+                if(message.length() > 0){
+                    Intent intent = new Intent(ACTION_SMS_SENT);
+                    intent.putExtra("address",phoneNum);
+                    intent.putExtra("body",message);
+                    PendingIntent sent = PendingIntent.getBroadcast(MessageActivity.this,0,intent,PendingIntent.FLAG_ONE_SHOT);
+                    smsManager.sendTextMessage(phoneNum,null,message,sent,null);
+                    input.setText("");
+                }
+            }
+        });
     }
 
     @Override
