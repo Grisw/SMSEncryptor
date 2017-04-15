@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/SMSEncryptor.iml" filepath="$PROJECT_DIR$/SMSEncryptor.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/qrlibrary/qrlibrary.iml" filepath="$PROJECT_DIR$/qrlibrary/qrlibrary.iml" />
     </modules>
   </component>
 </project>
