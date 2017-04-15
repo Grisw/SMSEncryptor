@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">信息</string>
+    <string name="app_title">信息</string>
     <string name="edit">编辑</string>
     <string name="send_msg">发送信息</string>
     <string name="create_contact">创建联系人</string>
@@ -7,4 +7,6 @@
     <string name="public_key">公钥</string>
     <string name="create">创建</string>
     <string name="contact_name">联系人姓名</string>
+    <string name="setting">设定</string>
+    <string name="generate_key">生成密钥</string>
 </resources>

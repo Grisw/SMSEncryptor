@@ -21,8 +21,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        final RecyclerView contacts = (RecyclerView) findViewById(R.id.contacts);
+        RecyclerView contacts = (RecyclerView) findViewById(R.id.contacts);
         ImageButton createMsg = (ImageButton) findViewById(R.id.create_msg);
+        ImageButton settingBtn = (ImageButton) findViewById(R.id.setting);
 
         contacts.setLayoutManager(new LinearLayoutManager(this));
         contactsAdapter = new ContactsAdapter(this);
@@ -32,6 +33,12 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 startActivity(new Intent(MainActivity.this,CreateContactActivity.class));
+            }
+        });
+        settingBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MainActivity.this,SettingActivity.class));
             }
         });
     }
