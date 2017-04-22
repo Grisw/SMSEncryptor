@@ -10,22 +10,29 @@ import android.net.Uri;
 import android.util.Log;
 import android.widget.Toast;
 
+import java.util.List;
+
 import pers.lxt.smsencryptor.activity.MessageActivity;
 
 public class SMSResultReceiver extends BroadcastReceiver {
+
+    private static long last_id = 0;
 
     @Override
     public void onReceive(Context context, Intent intent) {
         switch (getResultCode()){
             case Activity.RESULT_OK:{
-                ContentResolver contentResolver = context.getContentResolver();
-                ContentValues values = new ContentValues();
-                values.put("address",intent.getStringExtra("address"));
-                values.put("read",1);
-                values.put("type",2);
-                values.put("date",System.currentTimeMillis());
-                values.put("body",intent.getStringExtra("body"));
-                contentResolver.insert(Uri.parse("content://sms/sent"),values);
+                if(last_id != intent.getLongExtra("id",0)){
+                    last_id = intent.getLongExtra("id",0);
+                    ContentResolver contentResolver = context.getContentResolver();
+                    ContentValues values = new ContentValues();
+                    values.put("address",intent.getStringExtra("address"));
+                    values.put("read",1);
+                    values.put("type",2);
+                    values.put("date",System.currentTimeMillis());
+                    values.put("body",intent.getStringExtra("body"));
+                    contentResolver.insert(Uri.parse("content://sms/sent"),values);
+                }
             }break;
             default:{
                 Toast.makeText(context,"短信发送失败！",Toast.LENGTH_SHORT).show();

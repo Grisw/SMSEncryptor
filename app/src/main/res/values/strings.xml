@@ -9,4 +9,6 @@
     <string name="contact_name">联系人姓名</string>
     <string name="setting">设定</string>
     <string name="generate_key">生成密钥</string>
+    <string name="get_from_img">从图片获取</string>
+    <string name="get_from_camera">从相机获取</string>
 </resources>
