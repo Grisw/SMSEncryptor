@@ -77,8 +77,8 @@
             </intent-filter>
         </receiver>
 
-        <activity android:name=".activity.CreateContactActivity" />
-        <activity android:name=".activity.SettingActivity"></activity>
+        <activity android:name=".activity.ContactActivity" />
+        <activity android:name=".activity.SettingActivity" />
     </application>
 
 </manifest>

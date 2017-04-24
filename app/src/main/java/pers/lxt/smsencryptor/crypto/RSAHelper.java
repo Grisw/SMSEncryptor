@@ -1,4 +1,4 @@
-package pers.lxt.smsencryptor.encrypt;
+package pers.lxt.smsencryptor.crypto;
 
 import android.util.Base64;
 
@@ -51,7 +51,7 @@ public class RSAHelper {
         private String publicKey;
         private String privateKey;
 
-        public KeyPair(java.security.KeyPair keyPair){
+        KeyPair(java.security.KeyPair keyPair){
             publicKey = Base64.encodeToString(keyPair.getPublic().getEncoded(),Base64.DEFAULT);
             privateKey = Base64.encodeToString(keyPair.getPrivate().getEncoded(),Base64.DEFAULT);
         }

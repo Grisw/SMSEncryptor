@@ -11,20 +11,16 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
-import android.os.Bundle;
 import android.telephony.SmsMessage;
-import android.util.Log;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import pers.lxt.smsencryptor.R;
-import pers.lxt.smsencryptor.activity.MainActivity;
 import pers.lxt.smsencryptor.activity.MessageActivity;
 import pers.lxt.smsencryptor.database.Database;
-import pers.lxt.smsencryptor.encrypt.AESHelper;
-import pers.lxt.smsencryptor.encrypt.RSAHelper;
+import pers.lxt.smsencryptor.crypto.AESHelper;
+import pers.lxt.smsencryptor.crypto.RSAHelper;
 
 public class SMSReceiver extends BroadcastReceiver {
 

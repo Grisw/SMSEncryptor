@@ -55,7 +55,6 @@
   <application android:logo="@drawable/launcher_icon"
                android:allowBackup="true">
     <activity android:name=".CaptureActivity"
-              android:screenOrientation="sensorLandscape"
               android:clearTaskOnLaunch="true"
               android:stateNotNeeded="true"
               android:theme="@style/CaptureTheme"

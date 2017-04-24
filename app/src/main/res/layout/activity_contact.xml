@@ -3,7 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="pers.lxt.smsencryptor.activity.CreateContactActivity">
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    tools:context="pers.lxt.smsencryptor.activity.ContactActivity">
 
     <android.support.v7.widget.Toolbar
         android:id="@+id/tool_bar"
@@ -97,7 +99,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:textSize="12sp"/>
+            android:textSize="12sp" />
 
     </LinearLayout>
 
@@ -107,6 +109,7 @@
         android:layout_height="wrap_content"
         android:text="@string/create"
         android:layout_below="@id/_pky"
-        android:layout_margin="15dp"/>
+        android:layout_marginStart="15dp"
+        android:layout_marginEnd="15dp"/>
 
 </RelativeLayout>

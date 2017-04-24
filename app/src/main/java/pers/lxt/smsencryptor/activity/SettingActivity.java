@@ -6,22 +6,19 @@ import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.google.zxing.BarcodeFormat;
-import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 
 import pers.lxt.smsencryptor.R;
 import pers.lxt.smsencryptor.database.Database;
-import pers.lxt.smsencryptor.encrypt.RSAHelper;
+import pers.lxt.smsencryptor.crypto.RSAHelper;
 
 public class SettingActivity extends AppCompatActivity {
 
@@ -45,6 +42,10 @@ public class SettingActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 RSAHelper.KeyPair keyPair = RSAHelper.genKey();
+                if(keyPair==null){
+                    Toast.makeText(SettingActivity.this,"生成密钥失败",Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 SQLiteDatabase database = Database.getInstance(SettingActivity.this).getWritableDatabase();
                 ContentValues values = new ContentValues();
                 values.put("public_key",keyPair.getPublicKey());

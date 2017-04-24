@@ -8,28 +8,22 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.telephony.SmsManager;
-import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
 import pers.lxt.smsencryptor.R;
 import pers.lxt.smsencryptor.adapter.MessageAdapter;
 import pers.lxt.smsencryptor.database.Database;
-import pers.lxt.smsencryptor.encrypt.AESHelper;
-import pers.lxt.smsencryptor.encrypt.RSAHelper;
+import pers.lxt.smsencryptor.crypto.AESHelper;
+import pers.lxt.smsencryptor.crypto.RSAHelper;
 
 public class MessageActivity extends AppCompatActivity {
 
@@ -65,6 +59,7 @@ public class MessageActivity extends AppCompatActivity {
         final ImageButton back = (ImageButton) findViewById(R.id.back);
         TextView title = (TextView) findViewById(R.id.phone_num);
         ImageButton send = (ImageButton) findViewById(R.id.send);
+        ImageButton setting = (ImageButton) findViewById(R.id.setting);
 
         messages.setLayoutManager(new LinearLayoutManager(this));
         MessageAdapter messageAdapter = new MessageAdapter(this, phoneNum);
@@ -127,6 +122,7 @@ public class MessageActivity extends AppCompatActivity {
                     intent.putExtra("id",System.currentTimeMillis());
                     PendingIntent sent = PendingIntent.getBroadcast(MessageActivity.this,0,intent,PendingIntent.FLAG_ONE_SHOT);
 
+                    //每66个字符加一个0或者1，0表示没有更多短信了，1表示后续还有短信
                     int i;
                     for(i = 0;i<message.length()-66;i+=66){
                         smsManager.sendTextMessage(phoneNum,null,message.substring(i, i+66)+"1",sent,null);
@@ -135,6 +131,15 @@ public class MessageActivity extends AppCompatActivity {
 
                     input.setText("");
                 }
+            }
+        });
+        setting.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MessageActivity.this,ContactActivity.class);
+                intent.putExtra("is_create",false);
+                intent.putExtra("address",phoneNum);
+                startActivity(intent);
             }
         });
     }

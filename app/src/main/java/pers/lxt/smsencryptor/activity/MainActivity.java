@@ -32,7 +32,9 @@ public class MainActivity extends AppCompatActivity {
         createMsg.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(MainActivity.this,CreateContactActivity.class));
+                Intent intent = new Intent(MainActivity.this,ContactActivity.class);
+                intent.putExtra("is_create",true);
+                startActivity(intent);
             }
         });
         settingBtn.setOnClickListener(new View.OnClickListener() {
