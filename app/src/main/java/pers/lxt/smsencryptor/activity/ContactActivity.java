@@ -1,15 +1,13 @@
 package pers.lxt.smsencryptor.activity;
 
-import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -28,7 +26,7 @@ import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.QRCodeReader;
 
 import pers.lxt.smsencryptor.R;
-import pers.lxt.smsencryptor.database.Database;
+import pers.lxt.smsencryptor.database.Contacts;
 
 public class ContactActivity extends AppCompatActivity {
 
@@ -53,12 +51,10 @@ public class ContactActivity extends AppCompatActivity {
             String addr = getIntent().getStringExtra("address");
             findViewById(R.id.address).setEnabled(false);
             ((EditText) findViewById(R.id.address)).setText(addr);
-            SQLiteDatabase db = Database.getInstance(ContactActivity.this).getReadableDatabase();
-            Cursor cursor = db.query("contacts",new String[]{"name","public_key"},"address = ?",new String[]{addr},null,null,null);
-            if(cursor!=null && cursor.moveToNext()){
-                ((EditText) findViewById(R.id.name)).setText(cursor.getString(cursor.getColumnIndex("name")));
-                publicKeyTxv.setText(cursor.getString(cursor.getColumnIndex("public_key")));
-                cursor.close();
+            Contacts contact = new Contacts(this).select(addr);
+            if(contact != null){
+                ((EditText) findViewById(R.id.name)).setText(contact.getName());
+                publicKeyTxv.setText(contact.getPublicKey());
             }
         }
 
@@ -89,22 +85,18 @@ public class ContactActivity extends AppCompatActivity {
                     publicKey = null;
                 }
 
-                SQLiteDatabase db = Database.getInstance(ContactActivity.this).getWritableDatabase();
-                Cursor cursor = db.query("contacts",new String[]{"address"},"address = ?",new String[]{address},null,null,null);
-                if(cursor!=null&&cursor.moveToNext()){
-                    ContentValues values = new ContentValues();
-                    values.put("name",name);
-                    values.put("public_key",publicKey);
-                    db.update("contacts",values,"address = ?",new String[]{address});
-                    cursor.close();
+                Contacts contact = new Contacts(ContactActivity.this).select(address);
+                if(contact == null){
+                    contact = new Contacts(ContactActivity.this);
+                    contact.setAddress(address);
+                    contact.setName(name);
+                    contact.setPublicKey(publicKey);
+                    contact.insert();
                 }else{
-                    ContentValues values = new ContentValues();
-                    values.put("address",address);
-                    values.put("name",name);
-                    values.put("public_key",publicKey);
-                    db.insert("contacts",null,values);
+                    contact.setName(name);
+                    contact.setPublicKey(publicKey);
+                    contact.update();
                 }
-                db.close();
                 if(getIntent().getBooleanExtra("is_create",true)){
                     Intent intent = new Intent(ContactActivity.this,MessageActivity.class);
                     intent.putExtra("phone_num",address);

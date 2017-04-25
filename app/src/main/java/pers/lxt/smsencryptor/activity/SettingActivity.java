@@ -1,11 +1,10 @@
 package pers.lxt.smsencryptor.activity;
 
-import android.content.ContentValues;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -17,7 +16,6 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 
 import pers.lxt.smsencryptor.R;
-import pers.lxt.smsencryptor.database.Database;
 import pers.lxt.smsencryptor.crypto.RSAHelper;
 
 public class SettingActivity extends AppCompatActivity {
@@ -46,12 +44,11 @@ public class SettingActivity extends AppCompatActivity {
                     Toast.makeText(SettingActivity.this,"生成密钥失败",Toast.LENGTH_SHORT).show();
                     return;
                 }
-                SQLiteDatabase database = Database.getInstance(SettingActivity.this).getWritableDatabase();
-                ContentValues values = new ContentValues();
-                values.put("public_key",keyPair.getPublicKey());
-                values.put("private_key",keyPair.getPrivateKey());
-                database.update("key",values,"id = 1",null);
-                database.close();
+                SharedPreferences preferences = getSharedPreferences("key", Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = preferences.edit();
+                editor.putString("public_key",keyPair.getPublicKey());
+                editor.putString("private_key",keyPair.getPrivateKey());
+                editor.apply();
 
                 try {
                     int width = pkyImg.getWidth();
@@ -71,24 +68,20 @@ public class SettingActivity extends AppCompatActivity {
         super.onWindowFocusChanged(hasFocus);
         if(hasFocus){
             ImageView pkyImg = (ImageView) findViewById(R.id.public_key);
-            SQLiteDatabase database = Database.getInstance(SettingActivity.this).getReadableDatabase();
-            Cursor cursor = database.query("key",new String[]{"public_key"},null,null,null,null,null);
-            if(cursor!=null&&cursor.moveToNext()){
-                if(cursor.getString(0) != null){
-                    int width = pkyImg.getWidth();
-                    int height = pkyImg.getWidth();
+            SharedPreferences preferences = getSharedPreferences("key", Context.MODE_PRIVATE);
+            String publicKey = preferences.getString("public_key", null);
+            if(publicKey != null){
+                int width = pkyImg.getWidth();
+                int height = pkyImg.getWidth();
 
-                    try {
-                        Bitmap bmp = getQRCode(cursor.getString(0),width,height);
-                        pkyImg.setImageBitmap(bmp);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        Toast.makeText(SettingActivity.this,"获取二维码失败",Toast.LENGTH_SHORT).show();
-                    }
-                    cursor.close();
+                try {
+                    Bitmap bmp = getQRCode(publicKey,width,height);
+                    pkyImg.setImageBitmap(bmp);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Toast.makeText(SettingActivity.this,"获取二维码失败",Toast.LENGTH_SHORT).show();
                 }
             }
-            database.close();
         }
     }
 

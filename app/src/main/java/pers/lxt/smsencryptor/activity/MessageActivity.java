@@ -1,10 +1,7 @@
 package pers.lxt.smsencryptor.activity;
 
 import android.app.PendingIntent;
-import android.content.ContentValues;
 import android.content.Intent;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -21,9 +18,9 @@ import android.widget.Toast;
 
 import pers.lxt.smsencryptor.R;
 import pers.lxt.smsencryptor.adapter.MessageAdapter;
-import pers.lxt.smsencryptor.database.Database;
 import pers.lxt.smsencryptor.crypto.AESHelper;
 import pers.lxt.smsencryptor.crypto.RSAHelper;
+import pers.lxt.smsencryptor.database.Contacts;
 
 public class MessageActivity extends AppCompatActivity {
 
@@ -80,32 +77,27 @@ public class MessageActivity extends AppCompatActivity {
             public void onClick(View v) {
                 String message = input.getText().toString();
                 if(message.length() > 0){
-                    SQLiteDatabase db = Database.getInstance(MessageActivity.this).getWritableDatabase();
-                    Cursor cursor = db.query("contacts",new String[]{"public_key","session_key","expire"},"address = ?",new String[]{phoneNum},null,null,null);
-                    if(cursor!=null&&cursor.moveToNext()){
-                        long expire = cursor.getLong(cursor.getColumnIndex("expire"));
-                        String publicKey = cursor.getString(cursor.getColumnIndex("public_key"));
-                        String sessionKey = cursor.getString(cursor.getColumnIndex("session_key"));
-                        if(publicKey!=null&&publicKey.length()>0){
-                            if(System.currentTimeMillis()>expire){
-                                sessionKey = AESHelper.genKey();
-                                expire = System.currentTimeMillis()+86400000;
-                                ContentValues values = new ContentValues();
-                                values.put("expire",expire);
-                                values.put("session_key",sessionKey);
+                    Contacts contact = new Contacts(MessageActivity.this).select(phoneNum);
+                    if(contact != null){
+                        if(contact.getPublicKey()!=null&&contact.getPublicKey().length()>0){
+                            if(System.currentTimeMillis()>contact.getExpire()){
+                                String sessionKey = AESHelper.genKey();
+                                long expire = System.currentTimeMillis()+86400000;
+                                contact.setSessionKey(sessionKey);
+                                contact.setExpire(expire);
+                                contact.update();
                                 try {
                                     message = AESHelper.encrypt(message,sessionKey);
-                                    sessionKey = RSAHelper.encrypt(sessionKey,publicKey);
+                                    sessionKey = RSAHelper.encrypt(sessionKey,contact.getPublicKey());
                                     message = "pers.lxt.smsencryptor,"+sessionKey+","+expire+","+message;
-                                    db.update("contacts",values,"address = ?",new String[]{phoneNum});
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                     Toast.makeText(MessageActivity.this,"加密失败",Toast.LENGTH_SHORT).show();
                                 }
                             }else{
-                                if(sessionKey!=null&&sessionKey.length()>0){
+                                if(contact.getSessionKey()!=null&&contact.getSessionKey().length()>0){
                                     try {
-                                        message = AESHelper.encrypt(message,sessionKey);
+                                        message = AESHelper.encrypt(message,contact.getSessionKey());
                                         message = "pers.lxt.smsencryptor,,,"+message;
                                     } catch (Exception e) {
                                         e.printStackTrace();
@@ -114,7 +106,6 @@ public class MessageActivity extends AppCompatActivity {
                                 }
                             }
                         }
-                        cursor.close();
                     }
                     Intent intent = new Intent(ACTION_SMS_SENT);
                     intent.putExtra("address",phoneNum);

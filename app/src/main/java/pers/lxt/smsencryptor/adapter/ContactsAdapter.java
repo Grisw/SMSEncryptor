@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.ContentObserver;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Message;
@@ -21,7 +20,7 @@ import java.util.List;
 
 import pers.lxt.smsencryptor.R;
 import pers.lxt.smsencryptor.activity.MessageActivity;
-import pers.lxt.smsencryptor.database.Database;
+import pers.lxt.smsencryptor.database.Contacts;
 
 /**
  * Created by MissingNo on 2017/4/9.
@@ -58,7 +57,7 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
         }
     });
 
-    private Database database;
+    private Context context;
     private List<PhoneNumPair> contacts;
     private ContentResolver contentResolver;
     private ContentObserver contentObserver;
@@ -74,7 +73,7 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
                 getSmsInfo();
             }
         };
-        database = Database.getInstance(context);
+        this.context = context;
     }
 
     private void getSmsInfo() {
@@ -108,23 +107,13 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
                     cursor.close();
                 }
 
-                SQLiteDatabase db = database.getReadableDatabase();
-                cursor = db.query("contacts",new String[]{"address","name"},null,null,null,null,null);
-                if(cursor!=null){
-                    int phoneNumberColumn = cursor.getColumnIndex("address");
-                    int nameColumn = cursor.getColumnIndex("name");
-                    while(cursor.moveToNext()){
-                        String phoneNum = cursor.getString(phoneNumberColumn);
-                        String name = cursor.getString(nameColumn);
-
-                        PhoneNumPair pair = new PhoneNumPair(name, phoneNum, false);
-                        if(!buffer.contains(pair)){
-                            buffer.add(pair);
-                        }
+                List<Contacts> contacts = Contacts.getAllContacts(context);
+                for(Contacts contact : contacts){
+                    PhoneNumPair pair = new PhoneNumPair(contact.getName(), contact.getAddress(), false);
+                    if(!buffer.contains(pair)){
+                        buffer.add(pair);
                     }
-                    cursor.close();
                 }
-                db.close();
                 if(buffer.size()>0)
                     handler.obtainMessage(NOTIFY_ITEM_CHANGED,buffer).sendToTarget();
             }

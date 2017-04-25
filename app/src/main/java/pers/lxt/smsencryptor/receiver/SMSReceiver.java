@@ -8,8 +8,7 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.telephony.SmsMessage;
 
@@ -18,9 +17,9 @@ import java.util.Map;
 
 import pers.lxt.smsencryptor.R;
 import pers.lxt.smsencryptor.activity.MessageActivity;
-import pers.lxt.smsencryptor.database.Database;
 import pers.lxt.smsencryptor.crypto.AESHelper;
 import pers.lxt.smsencryptor.crypto.RSAHelper;
+import pers.lxt.smsencryptor.database.Contacts;
 
 public class SMSReceiver extends BroadcastReceiver {
 
@@ -87,33 +86,37 @@ public class SMSReceiver extends BroadcastReceiver {
         String[] messageBody = message.split(",");
         String result = message;
         if(messageBody.length==4){
-            SQLiteDatabase db = Database.getInstance(context).getWritableDatabase();
+            Contacts contact = new Contacts(context).select(address);
             if(messageBody[1].length()>0&&messageBody[2].length()>0){
-                Cursor cursor1 = db.query("key",new String[]{"private_key"},"id = 1",null,null,null,null);
-                if(cursor1!=null&&cursor1.moveToNext()){
-                    String privateKey = cursor1.getString(0);
+                SharedPreferences preferences = context.getSharedPreferences("key",Context.MODE_PRIVATE);
+                String privateKey = preferences.getString("private_key",null);
+                if(privateKey != null){
                     try {
                         String sessionKey = RSAHelper.decrypt(messageBody[1],privateKey);
 
-                        ContentValues values = new ContentValues();
-                        values.put("expire",Long.parseLong(messageBody[2]));
-                        values.put("session_key",sessionKey);
-                        db.update("contacts",values,"address = ?",new String[]{address});
+                        if(contact!=null){
+                            contact.setSessionKey(sessionKey);
+                            contact.setExpire(Long.parseLong(messageBody[2]));
+                            contact.update();
+                        }else{
+                            contact = new Contacts(context);
+                            contact.setAddress(address);
+                            contact.setSessionKey(sessionKey);
+                            contact.setExpire(Long.parseLong(messageBody[2]));
+                            contact.insert();
+                        }
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-                    cursor1.close();
                 }
             }
-            Cursor cursor = db.query("contacts",new String[]{"session_key"},"address = ?",new String[]{address},null,null,null);
-            if(cursor!=null&&cursor.moveToNext()){
-                String sessionKey = cursor.getString(0);
+            if(contact != null){
+                String sessionKey = contact.getSessionKey();
                 try {
                     result = AESHelper.decrypt(messageBody[3],sessionKey);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                cursor.close();
             }
         }
         return result;
