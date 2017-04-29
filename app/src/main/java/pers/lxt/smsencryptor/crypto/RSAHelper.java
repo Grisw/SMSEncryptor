@@ -38,6 +38,24 @@ public class RSAHelper {
         return Base64.encodeToString(result,Base64.DEFAULT);
     }
 
+    public static String sign(String content, String privateKey) throws Exception{
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(Base64.decode(privateKey,Base64.DEFAULT));
+        RSAPrivateKey rsaPrivateKey = (RSAPrivateKey) KeyFactory.getInstance("RSA").generatePrivate(keySpec);
+        Cipher cipher = Cipher.getInstance("RSA");
+        cipher.init(Cipher.ENCRYPT_MODE, rsaPrivateKey);
+        byte[] result = cipher.doFinal(content.getBytes("utf-8"));
+        return Base64.encodeToString(result,Base64.DEFAULT);
+    }
+
+    public static String decodeSign(String contentBase64, String publicKey) throws Exception{
+        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(Base64.decode(publicKey,Base64.DEFAULT));
+        RSAPublicKey rsaPublicKey = (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(keySpec);
+        Cipher cipher = Cipher.getInstance("RSA");
+        cipher.init(Cipher.DECRYPT_MODE, rsaPublicKey);
+        byte[] result = cipher.doFinal(Base64.decode(contentBase64,Base64.DEFAULT));
+        return new String(result,"utf-8");
+    }
+
     public static String decrypt(String sessionKey, String privateKey) throws Exception{
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(Base64.decode(privateKey,Base64.DEFAULT));
         RSAPrivateKey rsaPrivateKey = (RSAPrivateKey) KeyFactory.getInstance("RSA").generatePrivate(keySpec);

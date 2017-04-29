@@ -1,7 +1,9 @@
 package pers.lxt.smsencryptor.activity;
 
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -10,6 +12,7 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.telephony.SmsManager;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -19,6 +22,7 @@ import android.widget.Toast;
 import pers.lxt.smsencryptor.R;
 import pers.lxt.smsencryptor.adapter.MessageAdapter;
 import pers.lxt.smsencryptor.crypto.AESHelper;
+import pers.lxt.smsencryptor.crypto.HMACHelper;
 import pers.lxt.smsencryptor.crypto.RSAHelper;
 import pers.lxt.smsencryptor.database.Contacts;
 
@@ -80,16 +84,20 @@ public class MessageActivity extends AppCompatActivity {
                     Contacts contact = new Contacts(MessageActivity.this).select(phoneNum);
                     if(contact != null){
                         if(contact.getPublicKey()!=null&&contact.getPublicKey().length()>0){
+                            SharedPreferences preferences = getSharedPreferences("key", Context.MODE_PRIVATE);
                             if(System.currentTimeMillis()>contact.getExpire()){
                                 String sessionKey = AESHelper.genKey();
                                 long expire = System.currentTimeMillis()+86400000;
                                 contact.setSessionKey(sessionKey);
                                 contact.setExpire(expire);
                                 contact.update();
-                                try {
-                                    message = AESHelper.encrypt(message,sessionKey);
+                                try {   //先获取明文的认证码，然后将组合消息签名，然后用会话密钥加密，然后再加密会话密钥
+                                    String hmac = HMACHelper.sign(message, sessionKey);
+                                    String clip = expire+","+message+","+hmac;
+                                    clip = RSAHelper.sign(clip,preferences.getString("private_key",null));
+                                    clip = AESHelper.encrypt(clip,sessionKey);
                                     sessionKey = RSAHelper.encrypt(sessionKey,contact.getPublicKey());
-                                    message = "pers.lxt.smsencryptor,"+sessionKey+","+expire+","+message;
+                                    message = "pers.lxt.smsencryptor,"+sessionKey+","+clip;
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                     Toast.makeText(MessageActivity.this,"加密失败",Toast.LENGTH_SHORT).show();
@@ -97,8 +105,11 @@ public class MessageActivity extends AppCompatActivity {
                             }else{
                                 if(contact.getSessionKey()!=null&&contact.getSessionKey().length()>0){
                                     try {
-                                        message = AESHelper.encrypt(message,contact.getSessionKey());
-                                        message = "pers.lxt.smsencryptor,,,"+message;
+                                        String hmac = HMACHelper.sign(message, contact.getSessionKey());
+                                        String clip = ","+message+","+hmac;
+                                        clip = RSAHelper.sign(clip,preferences.getString("private_key",null));
+                                        clip = AESHelper.encrypt(clip,contact.getSessionKey());
+                                        message = "pers.lxt.smsencryptor,,"+clip;
                                     } catch (Exception e) {
                                         e.printStackTrace();
                                         Toast.makeText(MessageActivity.this,"加密失败",Toast.LENGTH_SHORT).show();
@@ -119,6 +130,8 @@ public class MessageActivity extends AppCompatActivity {
                         smsManager.sendTextMessage(phoneNum,null,message.substring(i, i+66)+"1",sent,null);
                     }
                     smsManager.sendTextMessage(phoneNum,null,message.substring(i, message.length())+"0",sent,null);
+
+                    Log.i("发送短信",message);
 
                     input.setText("");
                 }

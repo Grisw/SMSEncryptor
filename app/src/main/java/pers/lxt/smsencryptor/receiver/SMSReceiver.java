@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.telephony.SmsMessage;
+import android.util.Log;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,6 +19,7 @@ import java.util.Map;
 import pers.lxt.smsencryptor.R;
 import pers.lxt.smsencryptor.activity.MessageActivity;
 import pers.lxt.smsencryptor.crypto.AESHelper;
+import pers.lxt.smsencryptor.crypto.HMACHelper;
 import pers.lxt.smsencryptor.crypto.RSAHelper;
 import pers.lxt.smsencryptor.database.Contacts;
 
@@ -49,6 +51,7 @@ public class SMSReceiver extends BroadcastReceiver {
                             notifySMS(context,msg.getOriginatingAddress(),content,msg.getTimestampMillis());
                         }
                     }else{
+                        Log.i("收到短信来自:"+msg.getOriginatingAddress(),msg.getMessageBody());
                         notifySMS(context,msg.getOriginatingAddress(),msg.getMessageBody(),msg.getTimestampMillis());
                     }
                 }
@@ -83,40 +86,57 @@ public class SMSReceiver extends BroadcastReceiver {
     }
 
     private String processMessage(Context context, String address, String message){
+        Log.i("收到短信来自:"+address,message);
         String[] messageBody = message.split(",");
         String result = message;
-        if(messageBody.length==4){
+        if(messageBody.length==3 && messageBody[2].length()>0){
             Contacts contact = new Contacts(context).select(address);
-            if(messageBody[1].length()>0&&messageBody[2].length()>0){
+            if(contact != null){
                 SharedPreferences preferences = context.getSharedPreferences("key",Context.MODE_PRIVATE);
                 String privateKey = preferences.getString("private_key",null);
                 if(privateKey != null){
                     try {
-                        String sessionKey = RSAHelper.decrypt(messageBody[1],privateKey);
-
-                        if(contact!=null){
-                            contact.setSessionKey(sessionKey);
-                            contact.setExpire(Long.parseLong(messageBody[2]));
-                            contact.update();
+                        String sessionKey;
+                        if(messageBody[1].length()>0){
+                            sessionKey = RSAHelper.decrypt(messageBody[1],privateKey);
                         }else{
-                            contact = new Contacts(context);
-                            contact.setAddress(address);
-                            contact.setSessionKey(sessionKey);
-                            contact.setExpire(Long.parseLong(messageBody[2]));
-                            contact.insert();
+                            sessionKey = contact.getSessionKey();
+                        }
+
+                        if(sessionKey!=null && sessionKey.length()>0){
+                            String clip = AESHelper.decrypt(messageBody[2], sessionKey);
+                            clip = RSAHelper.decodeSign(clip,contact.getPublicKey());
+                            String[] clips = clip.split(",");
+                            if(clips.length == 3){
+                                if(HMACHelper.sign(clips[1],sessionKey).equals(clips[2])){
+                                    if(clips[0]!=null&&clips[0].length()>0){
+                                        contact.setSessionKey(sessionKey);
+                                        contact.setExpire(Long.parseLong(clips[0]));
+                                        contact.update();
+                                    }
+                                    result = clips[1];
+                                }else{
+                                    result = "**这条消息很有可能被篡改，谨慎阅读！**" + clips[1];
+                                }
+                            }else{
+                                result = "**这条加密消息被不明人物破坏了**";
+                            }
+                        }else{
+                            contact.setExpire(0L);
+                            contact.update();
+                            result = "**与对方密钥的同步失败了，可以向对方发送一条消息来重新同步**";
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
+                        contact.setExpire(0L);
+                        contact.update();
+                        result = "**解密过程中出现异常，可能消息遭到破坏,可以发送消息请对方重新发送**";
                     }
+                }else{
+                    result = "**你还没有生成密钥，这条消息无法解密（也不知道对面是怎么发给你的**";
                 }
-            }
-            if(contact != null){
-                String sessionKey = contact.getSessionKey();
-                try {
-                    result = AESHelper.decrypt(messageBody[3],sessionKey);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+            }else{
+                result = "**该用户没有在你的列表中登录，这条消息无法解密**";
             }
         }
         return result;
